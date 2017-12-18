@@ -1,0 +1,10 @@
+server {
+    listen        80;
+    server_name   {SITE_URL};
+    include       conf.d/acme.inc;
+
+    location / {
+        include			conf.d/proxy_set_header.inc;
+        proxy_pass		http://{HTTP_DOWNSTREAM}
+    }
+}

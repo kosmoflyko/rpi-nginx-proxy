@@ -1,0 +1,107 @@
+#/bin/bash
+
+#####################################
+#
+# User settings:
+#
+# Array of site URLs (space separated)
+#SITES_URL='site1.example.com site2.example.org'
+SITES_URL=''
+# Array of downstream for sites
+#HTTP_DOWNSTREAMS=([0]='server1.com:8080' [1]='server2.org:8080')
+HTTP_DOWNSTREAMS=''
+# Enable HTTP to HTTPS redirect "yes" or "no"
+# IS_HTTPS_ONLY='no'
+IS_HTTPS_ONLY='no'
+
+######################################
+#
+# System parameters:
+#
+BASE_DIR=./common
+CONF_DIR="$BASE_DIR/conf"
+NGINX_CONF_DIR="$CONF_DIR/nginx"
+TEMPLATES_DIR="$BASE_DIR/templates"
+NGINX_TEMPLATES_DIR="$TEMPLATES_DIR/nginx"
+
+#
+# Clean all configuration
+#
+function clean {
+    echo "Clean folder $CONF_DIR"
+    rm -rf "$CONF_DIR"
+}
+
+#
+# Generate HTTP config
+#
+function gen_http_cfg {
+    SITE_URL=$1
+    HTTP_DOWNSTREAM=$2
+    echo "Generate HTTP config for site $SITE_URL ..."
+    sed "s/{SITE_URL}/$SITE_URL/g" "$NGINX_TEMPLATES_DIR/conf.d/http_site.template" > "$NGINX_CONF_DIR/conf.d/$SITE_URL.conf"
+    sed -i "s/{HTTP_DOWNSTREAM}/$HTTP_DOWNSTREAM/g" "$NGINX_CONF_DIR/conf.d/$SITE_URL.conf"
+}
+
+#
+# Generate HTTP redirect to HTTPS
+#
+function gen_http_redirect {
+    SITE_URL=$1
+    echo "Generate HTTP redirect config for $SITE_URL ..."
+    sed "s/{SITE_URL}/$SITE_URL/g" "$NGINX_TEMPLATES_DIR/conf.d/http_redirect.template" > "$NGINX_CONF_DIR/conf.d/$SITE_URL.conf"
+}
+
+#
+# Generate HTTPS config
+#
+function gen_https_cfg {
+    SITE_URL=$1
+    HTTP_DOWNSTREAM=$2
+    echo "Generate HTTPS config for site $SITE_URL ..."
+    sed "s/{SITE_URL}/$SITE_URL/g" "$NGINX_TEMPLATES_DIR/conf.d/https_site.template" >> "$NGINX_CONF_DIR/conf.d/$SITE_URL.conf"
+    sed -i "s/{HTTP_DOWNSTREAM}/$HTTP_DOWNSTREAM/g" "$NGINX_CONF_DIR/conf.d/$SITE_URL.conf"
+}
+
+#
+# Copy config from template folder
+#
+function copy_cfg_from_tmpl {
+    echo "Copy configuration from template folder..."
+    cp -f "$NGINX_TEMPLATES_DIR/nginx.conf" "$NGINX_CONF_DIR/nginx.conf" 
+    cp -f "$NGINX_TEMPLATES_DIR/conf.d/acme.inc" "$NGINX_CONF_DIR/conf.d/acme.inc"
+    cp -f "$NGINX_TEMPLATES_DIR/conf.d/proxy_set_header.inc" "$NGINX_CONF_DIR/conf.d/proxy_set_header.inc"
+    cp -f "$NGINX_TEMPLATES_DIR/conf.d/redirect_http.inc" "$NGINX_CONF_DIR/conf.d/redirect_http.inc"
+    cp -f "$NGINX_TEMPLATES_DIR/conf.d/ssl-params.inc" "$NGINX_CONF_DIR/conf.d/ssl-params.inc"
+}
+
+
+#
+# Main function
+#
+
+clean
+mkdir -p "$NGINX_CONF_DIR/conf.d"
+
+# Generate Diffie–Hellman key
+echo "Generation Diffie-Hellman key..."
+openssl dhparam -dsaparam -out "$NGINX_CONF_DIR/dhparam.pem" 4096
+
+# Generate Nginx config
+INDEX=0
+for SITE_URL in $SITES_URL; do
+    HTTP_DOWNSTREAM="${HTTP_DOWNSTREAMS[INDEX]}"
+    if [ "$IS_HTTPS_ONLY" = 'no' ]; then
+        gen_http_cfg "$SITE_URL" "$HTTP_DOWNSTREAM"
+        gen_https_cfg "$SITE_URL" "$HTTP_DOWNSTREAM"
+    else
+        gen_http_redirect "$SITE_URL"
+        gen_http_cfg "$SITE_URL" "$HTTP_DOWNSTREAM"
+    fi
+    ((INDEX++))
+done
+
+copy_cfg_from_tmpl
+
+echo "------------------------------"
+echo "All prepare operation is done."

@@ -1,0 +1,6 @@
+server {
+    listen        80;
+    server_name   {SITE_URL};
+    include       conf.d/acme.inc;
+    include       conf.d/redirect_http.inc;
+}
