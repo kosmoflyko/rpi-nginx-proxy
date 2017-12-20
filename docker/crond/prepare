@@ -1,0 +1,31 @@
+#/bin/bash
+
+######################################
+#
+# System parameters:
+#
+BASE_DIR=../../common
+CONF_DIR="$BASE_DIR/conf"
+ACME_CONF_DIR="$CONF_DIR/acme"
+TEMPLATES_DIR="$BASE_DIR/templates"
+ACME_TEMPLATES_DIR="$TEMPLATES_DIR/acme"
+
+
+#
+# Generate ACME renew script
+#
+function gen_acme_cfg {
+    SITE_URLS=$1
+    echo "Add sites: $SITE_URLS to ACME renew script..."
+    sed "s/{SITE_URLS}/$SITE_URLS/g" "$ACME_TEMPLATES_DIR/conf.d/acme-client.template" > "$ACME_CONF_DIR/acme-client"
+}
+
+#
+# Main function
+#
+source ../../sites.conf
+
+gen_acme_cfg "$SITE_URLS"
+
+echo "------------------------------"
+echo "All prepare operation for crond container is done."

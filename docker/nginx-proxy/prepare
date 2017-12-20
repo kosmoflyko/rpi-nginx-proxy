@@ -1,24 +1,10 @@
 #/bin/bash
 
-#####################################
-#
-# User settings:
-#
-# Array of site URLs (space separated)
-#SITES_URL='site1.example.com site2.example.org'
-SITES_URL=''
-# Array of downstream for sites
-#HTTP_DOWNSTREAMS=([0]='server1.com:8080' [1]='server2.org:8080')
-HTTP_DOWNSTREAMS=''
-# Enable HTTP to HTTPS redirect "yes" or "no"
-# IS_HTTPS_ONLY='no'
-IS_HTTPS_ONLY='no'
-
 ######################################
 #
 # System parameters:
 #
-BASE_DIR=./common
+BASE_DIR=../../common
 CONF_DIR="$BASE_DIR/conf"
 NGINX_CONF_DIR="$CONF_DIR/nginx"
 TEMPLATES_DIR="$BASE_DIR/templates"
@@ -79,9 +65,10 @@ function copy_cfg_from_tmpl {
 #
 # Main function
 #
-
 clean
 mkdir -p "$NGINX_CONF_DIR/conf.d"
+
+source ../../sites.conf
 
 # Generate Diffie–Hellman key
 echo "Generation Diffie-Hellman key..."
@@ -104,4 +91,4 @@ done
 copy_cfg_from_tmpl
 
 echo "------------------------------"
-echo "All prepare operation is done."
+echo "All prepare operation for Nginx container is done."

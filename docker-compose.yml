@@ -1,11 +1,21 @@
 version: "2"
 
 services:
-  jenkins:
+  cron:
     restart: always
-    build: .
-    ports:
-      - 8080:8080
+    build:
+      context: docker/crond
     volumes:
-      - /mnt/piflashdrive1/jenkins:/usr/local/jenkins
-
+      - cert:/etc/ssl/acme
+      - logs/cron:/var/log/cron
+  proxy:
+    restart: always
+    build:
+      context: docker/nginix-proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - common/conf/nginx:/etc/nginx
+      - cert:/etc/ssl/acme
+      - logs/nginx:/var/log/nginx
